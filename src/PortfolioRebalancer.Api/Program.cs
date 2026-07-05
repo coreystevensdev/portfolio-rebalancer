@@ -60,6 +60,7 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseHttpMetrics();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -76,6 +77,8 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")
     .AllowAnonymous();
+
+app.MapMetrics().AllowAnonymous();
 
 var api = app.MapGroup("/api").RequireAuthorization();
 
