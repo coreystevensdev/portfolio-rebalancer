@@ -1,0 +1,59 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build, Push, Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$ECR_REGISTRY/portfolio-rebalancer:$IMAGE_TAG" .
+          docker push "$ECR_REGISTRY/portfolio-rebalancer:$IMAGE_TAG"
+          echo "image=$ECR_REGISTRY/portfolio-rebalancer:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+        id: build
+
+      - name: Update EC2 with new image
+        env:
+          IMAGE_URI: ${{ steps.build.outputs.image }}
+          INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+        run: |
+          aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "commands=[
+              'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $IMAGE_URI',
+              'docker pull $IMAGE_URI',
+              'docker stop api || true',
+              'docker rm api || true',
+              'docker run -d --name api --restart=always -p 80:8080 \
+                -e ConnectionStrings__Postgres=\"${{ secrets.POSTGRES_CONN_STRING }}\" \
+                -e JWT_SECRET=\"${{ secrets.JWT_SECRET }}\" \
+                -e ASPNETCORE_ENVIRONMENT=Production \
+                $IMAGE_URI'
+            ]"

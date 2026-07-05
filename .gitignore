@@ -1,0 +1,37 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+launchSettings.json
+appsettings.Development.json
+
+## Environment
+.env
+.env.local
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Test results
+TestResults/
+*.trx
+
+## Publish output
+publish/
+
+## Terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/.terraform.lock.hcl
+infra/terraform/terraform.tfvars
+
+## BMad artifacts
+_bmad-output/
+_bmad/
+*_explained.md
+CLAUDE.md
+AGENTS.md
