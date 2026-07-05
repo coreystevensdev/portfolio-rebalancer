@@ -31,6 +31,21 @@ jobs:
           # TestContainers pulls postgres:16-alpine -- Docker is available on ubuntu-latest.
           DOTNET_ENVIRONMENT: Test
 
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.2
+
+      - name: Lint chart
+        run: helm lint infra/helm/portfolio-rebalancer
+
   docker:
     name: Docker Build
     runs-on: ubuntu-latest

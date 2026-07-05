@@ -1,0 +1,6 @@
+apiVersion: v2
+name: portfolio-rebalancer
+description: Portfolio drift detection and rebalancing API (.NET 8, EF Core, PostgreSQL)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
