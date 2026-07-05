@@ -57,23 +57,30 @@ public class DriftCalculatorTests
     public void DetectsOutOfBandWhenDriftExceedsTolerance()
     {
         var portfolio = BuildPortfolio(driftTolerance: 5m);
+        // 70 shares AAPL @ $100 = $7,000 (70% actual vs 60% target = +10% drift)
+        // 30 shares MSFT @ $100 = $3,000 (30% actual vs 40% target = -10% drift)
+        portfolio.Holdings.Add(Holding.Create(portfolio.Id, "AAPL", [(70m, 90m, DateOnly.FromDateTime(DateTime.Today))]));
+        portfolio.Holdings.Add(Holding.Create(portfolio.Id, "MSFT", [(30m, 90m, DateOnly.FromDateTime(DateTime.Today))]));
+        var prices = new Dictionary<string, decimal> { ["AAPL"] = 100m, ["MSFT"] = 100m };
 
-        // Simulate 70% AAPL / 30% MSFT vs target 60/40 -- AAPL is 10% over.
-        // We do this by computing expected drift without EF -- just test the math model.
-        // DriftPct for AAPL = (0.70 - 0.60) * 100 = 10 > 5 -> out of band
-        // We verify via direct math that the classification would be out of band.
-        var drift = 10m;
-        var tolerance = 5m;
-        var isOutOfBand = Math.Abs(drift) > tolerance;
-        isOutOfBand.Should().BeTrue();
+        var report = DriftCalculator.Calculate(portfolio, prices);
+
+        report.Positions.Single(p => p.Ticker == "AAPL").IsOutOfBand.Should().BeTrue();
+        report.Positions.Single(p => p.Ticker == "MSFT").IsOutOfBand.Should().BeTrue();
     }
 
     [Fact]
     public void DoesNotFlagInBandPositions()
     {
-        var drift = 3m;
-        var tolerance = 5m;
-        var isOutOfBand = Math.Abs(drift) > tolerance;
-        isOutOfBand.Should().BeFalse();
+        var portfolio = BuildPortfolio(driftTolerance: 5m);
+        // 63 shares AAPL @ $100 = $6,300 (63% actual vs 60% target = +3% drift -- within 5%)
+        // 37 shares MSFT @ $100 = $3,700 (37% actual vs 40% target = -3% drift -- within 5%)
+        portfolio.Holdings.Add(Holding.Create(portfolio.Id, "AAPL", [(63m, 90m, DateOnly.FromDateTime(DateTime.Today))]));
+        portfolio.Holdings.Add(Holding.Create(portfolio.Id, "MSFT", [(37m, 90m, DateOnly.FromDateTime(DateTime.Today))]));
+        var prices = new Dictionary<string, decimal> { ["AAPL"] = 100m, ["MSFT"] = 100m };
+
+        var report = DriftCalculator.Calculate(portfolio, prices);
+
+        report.Positions.All(p => !p.IsOutOfBand).Should().BeTrue();
     }
 }
