@@ -44,15 +44,15 @@ All drift calculation and order generation is pure domain logic with no framewor
 
 All `/api/*` endpoints require `Authorization: Bearer <jwt>`.
 
-```
-GET  /health                                  -- liveness check
-POST /api/portfolios                          -- create portfolio with target allocations
-GET  /api/portfolios/{id}                     -- get portfolio
-POST /api/portfolios/{id}/holdings            -- add a holding with purchase lots
-POST /api/portfolios/{id}/drift               -- calculate drift (body: { prices: {...} })
-POST /api/portfolios/{id}/rebalance           -- generate + persist rebalancing orders
-GET  /api/portfolios/{id}/rebalance           -- rebalancing history
-```
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | liveness check |
+| POST | `/api/portfolios` | create portfolio with target allocations |
+| GET | `/api/portfolios/{id}` | get portfolio |
+| POST | `/api/portfolios/{id}/holdings` | add a holding with purchase lots |
+| POST | `/api/portfolios/{id}/drift` | calculate drift (body: `{ prices: {...} }`) |
+| POST | `/api/portfolios/{id}/rebalance` | generate and persist rebalancing orders |
+| GET | `/api/portfolios/{id}/rebalance` | rebalancing history |
 
 ### Example: Create and rebalance
 
