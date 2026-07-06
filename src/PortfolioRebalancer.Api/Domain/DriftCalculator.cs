@@ -21,7 +21,6 @@ public static class DriftCalculator
     {
         var holdingsByTicker = portfolio.Holdings.ToDictionary(h => h.Ticker, h => h);
 
-        // Market value per ticker.
         var marketValues = portfolio.TargetAllocations
             .ToDictionary(
                 a => a.Ticker,

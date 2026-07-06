@@ -21,7 +21,6 @@ public static class RebalancingEngine
             if (!pricesByTicker.TryGetValue(position.Ticker, out var price) || price <= 0)
                 throw new DomainException($"Missing or invalid price for ticker '{position.Ticker}'.");
 
-            // How many dollars need to move for this ticker.
             var targetValue = position.TargetWeight * drift.TotalPortfolioValue;
             var delta = targetValue - position.MarketValue;
             var shares = Math.Abs(delta) / price;
