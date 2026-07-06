@@ -4,7 +4,7 @@
 
 A REST API for investment portfolio drift detection and rebalancing order generation. Given a portfolio's target allocation and current market prices, it calculates drift per position and generates buy/sell orders to restore balance.
 
-Live demo: `http://<ec2-public-ip>/health` (deploy with Terraform -- see [Deployment](#deployment))
+Deploy via Terraform and run on EC2 (see [Deployment](#deployment)). No persistent live URL -- ECS provisioning costs ~$30/mo; spin up locally with `docker compose up`.
 
 ## Problem
 
