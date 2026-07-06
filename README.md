@@ -1,10 +1,11 @@
 # Portfolio Rebalancer
 
 ![CI](https://github.com/coreystevensdev/portfolio-rebalancer/actions/workflows/ci.yml/badge.svg)
+![19 tests](https://img.shields.io/badge/tests-19-brightgreen)
 
 A REST API for investment portfolio drift detection and rebalancing order generation. Given a portfolio's target allocation and current market prices, it calculates drift per position and generates buy/sell orders to restore balance.
 
-Deploy via Terraform and run on EC2 (see [Deployment](#deployment)). No persistent live URL: ECS provisioning costs ~$30/mo; spin up locally with `docker compose up`.
+Deploy via Terraform and run on EC2 (see [Deployment](#deployment)). No persistent live URL: EC2 provisioning costs apply; spin up locally with `docker compose up`.
 
 ## Problem
 
