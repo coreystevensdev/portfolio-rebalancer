@@ -30,9 +30,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")
-        ?? throw new InvalidOperationException("Connection string 'Postgres' is required.")));
+// Accepts Npgsql format via ConnectionStrings:Postgres or Railway's DATABASE_URL URI.
+var pgConnectionString = builder.Configuration.GetConnectionString("Postgres")
+    ?? builder.Configuration["DATABASE_URL"]
+    ?? throw new InvalidOperationException("ConnectionStrings:Postgres or DATABASE_URL is required.");
+
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(pgConnectionString));
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
@@ -64,15 +67,15 @@ app.UseHttpMetrics();
 app.UseAuthentication();
 app.UseAuthorization();
 
-if (app.Environment.IsDevelopment())
+// Always migrate on startup for containerized deployments.
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")
