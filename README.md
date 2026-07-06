@@ -16,27 +16,14 @@ A stateful REST API that persists portfolio definitions (target allocations, dri
 
 ## Architecture
 
-```
-Client (curl / app)
-        |
-        v
-  POST /api/portfolios/{id}/drift
-  POST /api/portfolios/{id}/rebalance
-        |
-        v
-  ASP.NET Core 8 Minimal API
-  JWT Bearer auth (HS256)
-  MediatR vertical-slice handlers
-        |
-        v
-  DriftCalculator (pure domain service)
-  RebalancingEngine (pure domain service)
-        |
-        v
-  Entity Framework Core 8 + Npgsql
-        |
-        v
-  PostgreSQL 16 (AWS RDS db.t3.micro)
+```mermaid
+flowchart TD
+    A[Client] --> B["ASP.NET Core 8 Minimal API\nJWT Bearer auth (HS256)"]
+    B --> C["MediatR vertical-slice handlers\none handler per feature"]
+    C --> D["DriftCalculator\n(pure domain, no framework deps)"]
+    C --> E["RebalancingEngine\n(pure domain, no framework deps)"]
+    D & E --> F["EF Core 8 + Npgsql"]
+    F --> G[(PostgreSQL 16)]
 ```
 
 All drift calculation and order generation is pure domain logic with no framework dependencies. Handlers are thin: load from DB, call domain service, persist result, return DTO.
