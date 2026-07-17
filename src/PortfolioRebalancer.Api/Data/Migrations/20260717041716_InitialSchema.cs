@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -85,7 +85,7 @@ namespace PortfolioRebalancer.Api.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Lots",
+                name: "Lot",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -96,9 +96,9 @@ namespace PortfolioRebalancer.Api.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Lots", x => x.Id);
+                    table.PrimaryKey("PK_Lot", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Lots_Holdings_HoldingId",
+                        name: "FK_Lot_Holdings_HoldingId",
                         column: x => x.HoldingId,
                         principalTable: "Holdings",
                         principalColumn: "Id",
@@ -106,7 +106,7 @@ namespace PortfolioRebalancer.Api.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "RebalancingOrders",
+                name: "RebalancingOrder",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -118,9 +118,9 @@ namespace PortfolioRebalancer.Api.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RebalancingOrders", x => x.Id);
+                    table.PrimaryKey("PK_RebalancingOrder", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_RebalancingOrders_RebalancingEvents_EventId",
+                        name: "FK_RebalancingOrder_RebalancingEvents_EventId",
                         column: x => x.EventId,
                         principalTable: "RebalancingEvents",
                         principalColumn: "Id",
@@ -133,8 +133,8 @@ namespace PortfolioRebalancer.Api.Data.Migrations
                 column: "PortfolioId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Lots_HoldingId",
-                table: "Lots",
+                name: "IX_Lot_HoldingId",
+                table: "Lot",
                 column: "HoldingId");
 
             migrationBuilder.CreateIndex(
@@ -148,8 +148,8 @@ namespace PortfolioRebalancer.Api.Data.Migrations
                 column: "PortfolioId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RebalancingOrders_EventId",
-                table: "RebalancingOrders",
+                name: "IX_RebalancingOrder_EventId",
+                table: "RebalancingOrder",
                 column: "EventId");
 
             migrationBuilder.CreateIndex(
@@ -161,12 +161,23 @@ namespace PortfolioRebalancer.Api.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(name: "RebalancingOrders");
-            migrationBuilder.DropTable(name: "Lots");
-            migrationBuilder.DropTable(name: "TargetAllocation");
-            migrationBuilder.DropTable(name: "RebalancingEvents");
-            migrationBuilder.DropTable(name: "Holdings");
-            migrationBuilder.DropTable(name: "Portfolios");
+            migrationBuilder.DropTable(
+                name: "Lot");
+
+            migrationBuilder.DropTable(
+                name: "RebalancingOrder");
+
+            migrationBuilder.DropTable(
+                name: "TargetAllocation");
+
+            migrationBuilder.DropTable(
+                name: "Holdings");
+
+            migrationBuilder.DropTable(
+                name: "RebalancingEvents");
+
+            migrationBuilder.DropTable(
+                name: "Portfolios");
         }
     }
 }

@@ -24,9 +24,8 @@ public static class DriftCalculator
         var marketValues = portfolio.TargetAllocations
             .ToDictionary(
                 a => a.Ticker,
-                a => holdingsByTicker.TryGetValue(a.Ticker, out var h)
-                    ? h.TotalShares * GetPrice(pricesByTicker, a.Ticker)
-                    : 0m
+                a => (holdingsByTicker.TryGetValue(a.Ticker, out var h) ? h.TotalShares : 0m)
+                    * GetPrice(pricesByTicker, a.Ticker)
             );
 
         var totalValue = marketValues.Values.Sum();

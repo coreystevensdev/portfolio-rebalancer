@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -78,8 +79,8 @@ public class PortfolioEndpointTests : IAsyncLifetime
         var response = await _client.PostAsJsonAsync("/api/portfolios", body);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<dynamic>();
-        result.Should().NotBeNull();
+        var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+        result.GetProperty("id").GetGuid().Should().NotBeEmpty();
     }
 
     [Fact]

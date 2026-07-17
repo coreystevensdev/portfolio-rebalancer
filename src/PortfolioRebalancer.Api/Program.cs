@@ -9,6 +9,7 @@ using PortfolioRebalancer.Api.Data;
 using PortfolioRebalancer.Api.Features.Portfolios;
 using PortfolioRebalancer.Api.Features.Rebalancing;
 using PortfolioRebalancer.Api.Middleware;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
