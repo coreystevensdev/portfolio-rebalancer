@@ -51,6 +51,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: smoke
+          POSTGRES_PASSWORD: smoke
+          POSTGRES_DB: smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -60,11 +75,19 @@ jobs:
       - name: Smoke test
         run: |
           docker run -d --name smoke \
-            -e ConnectionStrings__Postgres="Host=localhost;Database=noop;Username=noop;Password=noop" \
+            --network host \
+            -e ConnectionStrings__Postgres="Host=localhost;Port=5432;Database=smoke;Username=smoke;Password=smoke" \
             -e JWT_SECRET="smoke-test-secret-key-at-least-32-chars" \
             -e ASPNETCORE_ENVIRONMENT=Production \
-            -p 8080:8080 \
             portfolio-rebalancer:ci
-          sleep 4
-          curl -f http://localhost:8080/health || (docker logs smoke && exit 1)
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:8080/health; then
+              docker stop smoke
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server never became healthy"
+          docker logs smoke
           docker stop smoke
+          exit 1

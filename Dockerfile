@@ -7,7 +7,7 @@ RUN dotnet restore src/PortfolioRebalancer.Api/PortfolioRebalancer.Api.csproj
 
 COPY src/ src/
 RUN dotnet publish src/PortfolioRebalancer.Api/PortfolioRebalancer.Api.csproj \
-    -c Release -o /publish --no-restore
+    -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
