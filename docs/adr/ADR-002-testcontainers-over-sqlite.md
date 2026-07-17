@@ -14,7 +14,7 @@ Integration tests that exercise EF Core queries need a database. Two common appr
 
 Use `Testcontainers.PostgreSql` to run a real PostgreSQL 16 instance for integration tests.
 
-The `AppDbContextFixture` starts one container for the entire test collection via `IAsyncLifetime`, applies migrations once, and resets state between tests with a transaction rollback pattern. Each test runs in a transaction that is never committed.
+`PortfolioEndpointTests` implements `IAsyncLifetime` directly and starts its own `PostgreSqlContainer` per test class, applying migrations before each run. There is only one integration test class today, so a shared collection fixture has not been needed yet; if a second integration test class is added, extract a shared `IAsyncLifetime` fixture at that point instead of duplicating the container-startup logic.
 
 ## Consequences
 
