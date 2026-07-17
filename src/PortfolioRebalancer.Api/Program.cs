@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PortfolioRebalancer.Api.Behaviors;
 using PortfolioRebalancer.Api.Data;
 using PortfolioRebalancer.Api.Features.Portfolios;
 using PortfolioRebalancer.Api.Features.Rebalancing;
@@ -38,7 +39,11 @@ var pgConnectionString = builder.Configuration.GetConnectionString("Postgres")
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(pgConnectionString));
 
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
