@@ -149,4 +149,56 @@ public class PortfolioEndpointTests : IAsyncLifetime
         var driftResponse = await _client.PostAsJsonAsync($"/api/portfolios/{id}/drift", driftBody);
         driftResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task HistoryEndpoint_ReturnsOwnEvents()
+    {
+        var createBody = new
+        {
+            name = "History Owner Test",
+            driftTolerancePct = 5.0m,
+            allocations = new[] { new { ticker = "SPY", weight = 1.0 } }
+        };
+        var createResponse = await _client.PostAsJsonAsync("/api/portfolios", createBody);
+        var locationHeader = createResponse.Headers.Location!.ToString();
+        var id = locationHeader.Split('/').Last();
+
+        var rebalanceBody = new { prices = new Dictionary<string, decimal> { ["SPY"] = 500m } };
+        var rebalanceResponse = await _client.PostAsJsonAsync($"/api/portfolios/{id}/rebalance", rebalanceBody);
+        rebalanceResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var historyResponse = await _client.GetAsync($"/api/portfolios/{id}/rebalance");
+        historyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var events = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        events.GetArrayLength().Should().Be(1);
+        events[0].GetProperty("totalPortfolioValue").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task HistoryEndpoint_ReturnsEmptyForOtherUsersPortfolio()
+    {
+        var createBody = new
+        {
+            name = "History IDOR Test",
+            driftTolerancePct = 5.0m,
+            allocations = new[] { new { ticker = "SPY", weight = 1.0 } }
+        };
+        var createResponse = await _client.PostAsJsonAsync("/api/portfolios", createBody);
+        var locationHeader = createResponse.Headers.Location!.ToString();
+        var id = locationHeader.Split('/').Last();
+
+        var rebalanceBody = new { prices = new Dictionary<string, decimal> { ["SPY"] = 500m } };
+        await _client.PostAsJsonAsync($"/api/portfolios/{id}/rebalance", rebalanceBody);
+
+        using var otherUserClient = _factory.CreateClient();
+        otherUserClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", TestJwt.Generate("a-different-user"));
+
+        var historyResponse = await otherUserClient.GetAsync($"/api/portfolios/{id}/rebalance");
+        historyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var events = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        events.GetArrayLength().Should().Be(0);
+    }
 }

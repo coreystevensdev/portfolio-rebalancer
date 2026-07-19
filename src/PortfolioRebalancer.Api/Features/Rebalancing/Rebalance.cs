@@ -16,7 +16,7 @@ public record OrderDto(string Ticker, string Action, decimal Shares, decimal Est
 public record RebalanceResponse(
     Guid EventId,
     DateTimeOffset CreatedAt,
-    decimal TotalPortfolioValue,
+    decimal? TotalPortfolioValue,
     IReadOnlyList<OrderDto> Orders
 );
 

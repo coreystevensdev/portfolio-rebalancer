@@ -1,7 +1,7 @@
 # Portfolio Rebalancer
 
 ![CI](https://github.com/coreystevensdev/portfolio-rebalancer/actions/workflows/ci.yml/badge.svg)
-![25 tests](https://img.shields.io/badge/tests-25-brightgreen)
+![27 tests](https://img.shields.io/badge/tests-27-brightgreen)
 
 A REST API for investment portfolio drift detection and rebalancing order generation. Given a portfolio's target allocation and current market prices, it calculates drift per position and generates buy/sell orders to restore balance.
 
@@ -128,7 +128,7 @@ jwt encode --secret "your-secret" --sub "user-id-1"
 dotnet test
 ```
 
-Tests: 18 unit (domain logic, no DB) + 7 integration (real PostgreSQL via TestContainers).
+Tests: 18 unit (domain logic, no DB) + 9 integration (real PostgreSQL via TestContainers).
 
 ## Deployment
 

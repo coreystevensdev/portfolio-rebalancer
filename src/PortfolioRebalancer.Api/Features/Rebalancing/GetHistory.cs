@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PortfolioRebalancer.Api.Data;
-using PortfolioRebalancer.Api.Domain;
 
 namespace PortfolioRebalancer.Api.Features.Rebalancing;
 
@@ -11,21 +10,17 @@ public sealed class GetHistoryHandler(AppDbContext db) : IRequestHandler<GetHist
 {
     public async Task<IReadOnlyList<RebalanceResponse>> Handle(GetHistoryQuery query, CancellationToken ct)
     {
-        var portfolioExists = await db.Portfolios
-            .AnyAsync(p => p.Id == query.PortfolioId && p.UserId == query.UserId, ct);
-
-        if (!portfolioExists) throw new DomainException("Portfolio not found.");
-
         var events = await db.RebalancingEvents
             .Include(ev => ev.Orders)
-            .Where(ev => ev.PortfolioId == query.PortfolioId)
+            .Where(ev => ev.PortfolioId == query.PortfolioId
+                && db.Portfolios.Any(p => p.Id == ev.PortfolioId && p.UserId == query.UserId))
             .OrderByDescending(ev => ev.CreatedAt)
             .ToListAsync(ct);
 
         return events.Select(ev => new RebalanceResponse(
             ev.Id,
             ev.CreatedAt,
-            TotalPortfolioValue: 0m, // not stored; drift is recalculated live
+            TotalPortfolioValue: null, // not stored; drift is recalculated live, not retroactively
             ev.Orders.Select(o => new OrderDto(o.Ticker, o.Action.ToString(), o.Shares, o.EstimatedValue)).ToList()
         )).ToList();
     }
