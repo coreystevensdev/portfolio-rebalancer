@@ -31,6 +31,19 @@ jobs:
           # TestContainers pulls postgres:16-alpine -- Docker is available on ubuntu-latest.
           DOTNET_ENVIRONMENT: Test
 
+      - name: README test count matches what dotnet runs
+        run: |
+          # Re-reads the count from the run above rather than re-running the
+          # suite, which would pull the postgres testcontainer a second time.
+          n=$(dotnet test --no-build -c Release --verbosity normal 2>&1 \
+              | grep -oE 'Total tests: [0-9]+' | grep -oE '[0-9]+' | tail -1)
+          [ -n "$n" ] || { echo "could not parse a count out of dotnet test"; exit 1; }
+          grep -q "tests-$n-brightgreen" README.md || {
+            echo "dotnet runs $n, the README badge does not say so. Update it."; exit 1; }
+          echo "README agrees with dotnet: $n"
+        env:
+          DOTNET_ENVIRONMENT: Test
+
   helm-lint:
     name: Helm Lint
     runs-on: ubuntu-latest
