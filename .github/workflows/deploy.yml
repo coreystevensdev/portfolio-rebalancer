@@ -1,8 +1,8 @@
 name: Deploy to AWS
 
+# Manual only. The deploy role is created by terraform apply, and that stack isn't
+# left standing, so a push-triggered run has no role to assume.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
