@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS builder
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS builder
 WORKDIR /app
 
 COPY PortfolioRebalancer.sln ./
@@ -9,7 +9,7 @@ COPY src/ src/
 RUN dotnet publish src/PortfolioRebalancer.Api/PortfolioRebalancer.Api.csproj \
     -c Release -o /publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=builder /publish .
 EXPOSE 8080

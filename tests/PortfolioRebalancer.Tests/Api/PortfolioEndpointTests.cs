@@ -15,8 +15,7 @@ namespace PortfolioRebalancer.Tests.Api;
 
 public class PortfolioEndpointTests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
         .Build();
 
     private HttpClient _client = null!;
