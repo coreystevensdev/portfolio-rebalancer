@@ -19,11 +19,11 @@ A stateful REST API that persists portfolio definitions (target allocations, dri
 
 ```mermaid
 flowchart TD
-    A[Client] --> B["ASP.NET Core 8 Minimal API\nJWT Bearer auth (HS256)"]
+    A[Client] --> B["ASP.NET Core 10 Minimal API\nJWT Bearer auth (HS256)"]
     B --> C["MediatR vertical-slice handlers\none handler per feature"]
     C --> D["DriftCalculator\n(pure domain, no framework deps)"]
     C --> E["RebalancingEngine\n(pure domain, no framework deps)"]
-    D & E --> F["EF Core 8 + Npgsql"]
+    D & E --> F["EF Core 10 + Npgsql"]
     F --> G[(PostgreSQL 16)]
 ```
 
@@ -33,11 +33,11 @@ All drift calculation and order generation is pure domain logic with no framewor
 
 | Layer | Technology | Why |
 |---|---|---|
-| Runtime | ASP.NET Core 8 (.NET 8 LTS) | Enterprise .NET standard; Minimal API eliminates controller boilerplate |
+| Runtime | ASP.NET Core 10 (.NET 10 LTS) | Enterprise .NET standard; Minimal API eliminates controller boilerplate |
 | Architecture | MediatR 12 (CQRS, vertical slices) | One handler per feature; avoids service-layer sprawl |
-| ORM | EF Core 8 + Npgsql | Fluent API config, typed migrations, PostgreSQL-native types |
+| ORM | EF Core 10 + Npgsql | Fluent API config, typed migrations, PostgreSQL-native types |
 | Database | PostgreSQL 16 | Reliable, decimal-safe arithmetic (no float rounding in financial math) |
-| Auth | JWT HS256 (JwtBearer 8) | Stateless; UserId claim scopes every query to the calling user |
+| Auth | JWT HS256 (JwtBearer 10) | Stateless; UserId claim scopes every query to the calling user |
 | Testing | xUnit + TestContainers.PostgreSql + FluentAssertions | Integration tests hit a real PostgreSQL container, not SQLite or mocks |
 | Infra | Terraform (AWS EC2 t2.micro + RDS db.t3.micro) | Free-tier eligible; OIDC GitHub Actions deploy (no stored credentials) |
 
