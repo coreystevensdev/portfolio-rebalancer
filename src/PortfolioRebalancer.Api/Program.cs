@@ -31,7 +31,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Demo tokens read, drift and rebalance. They do not create rows outside
+    // the one portfolio their session was given, because anyone can mint one.
+    options.AddPolicy(DemoClaim.PolicyName, policy =>
+        policy.RequireAssertion(ctx =>
+            !ctx.User.HasClaim(DemoClaim.Type, DemoClaim.Value)));
+});
 
 // Accepts Npgsql format via ConnectionStrings:Postgres or Railway's DATABASE_URL URI.
 var pgConnectionString = builder.Configuration.GetConnectionString("Postgres")
@@ -121,7 +128,7 @@ api.MapPost("/portfolios", async (
     var cmd = new CreatePortfolioCommand(userId, body.Name, body.DriftTolerancePct, body.Allocations);
     var result = await mediator.Send(cmd, ct);
     return Results.Created($"/api/portfolios/{result.Id}", result);
-}).WithTags("Portfolios");
+}).WithTags("Portfolios").RequireAuthorization(DemoClaim.PolicyName);
 
 api.MapGet("/portfolios/{id:guid}", async (
     Guid id,
@@ -149,7 +156,7 @@ api.MapPost("/portfolios/{id:guid}/holdings", async (
     var cmd = new AddHoldingCommand(userId, id, body.Ticker, body.Lots);
     var result = await mediator.Send(cmd, ct);
     return Results.Created($"/api/portfolios/{id}/holdings/{result.HoldingId}", result);
-}).WithTags("Portfolios");
+}).WithTags("Portfolios").RequireAuthorization(DemoClaim.PolicyName);
 
 // Rebalancing
 api.MapPost("/portfolios/{id:guid}/drift", async (

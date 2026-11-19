@@ -187,6 +187,78 @@ public class DemoSessionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ADemoTokenCannotCreateMorePortfolios()
+    {
+        // The token is handed to anyone who asks, and POST /portfolios writes a
+        // row per call. Capping the session endpoint while leaving this open
+        // guards the door and leaves the window up: one visitor could fill the
+        // cap and lock every later visitor out.
+        var (token, _) = await StartSession();
+        var client = Authed(_factory.CreateClient(), token);
+
+        var res = await client.PostAsJsonAsync("/api/portfolios", new
+        {
+            name = "mine",
+            driftTolerancePct = 5.0m,
+            allocations = new[] { new { ticker = "AAPL", weight = 1.0 } },
+        });
+
+        res.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ADemoTokenCannotAddHoldings()
+    {
+        var (token, portfolioId) = await StartSession();
+        var client = Authed(_factory.CreateClient(), token);
+
+        var res = await client.PostAsJsonAsync($"/api/portfolios/{portfolioId}/holdings", new
+        {
+            ticker = "AAPL",
+            lots = new[] { new { shares = 1m, costBasisPerShare = 1m, purchasedAt = "2024-01-01" } },
+        });
+
+        res.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ADemoTokenStillDoesEverythingThePageNeeds()
+    {
+        // Narrowing it must not break the demo. Read, drift and rebalance are
+        // the whole surface the page drives.
+        var (token, portfolioId) = await StartSession();
+        var client = Authed(_factory.CreateClient(), token);
+
+        var prices = await client.GetFromJsonAsync<JsonElement>("/api/demo/prices");
+
+        (await client.GetAsync($"/api/portfolios/{portfolioId}"))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        (await client.PostAsJsonAsync($"/api/portfolios/{portfolioId}/drift", new { prices }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        (await client.PostAsJsonAsync($"/api/portfolios/{portfolioId}/rebalance", new { prices }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        (await client.GetAsync($"/api/portfolios/{portfolioId}/rebalance"))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ARealTokenIsNotAffectedByTheDemoRestriction()
+    {
+        // The restriction keys off a claim the demo mints, not off the route,
+        // so an ordinary caller must be untouched by it.
+        var client = Authed(_factory.CreateClient(), TestJwt.Generate("ordinary-user"));
+
+        var res = await client.PostAsJsonAsync("/api/portfolios", new
+        {
+            name = "real",
+            driftTolerancePct = 5.0m,
+            allocations = new[] { new { ticker = "AAPL", weight = 1.0 } },
+        });
+
+        res.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
     public async Task TheRootServesThePage()
     {
         var res = await _client.GetAsync("/");

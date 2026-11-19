@@ -9,6 +9,13 @@ using PortfolioRebalancer.Api.Domain;
 
 namespace PortfolioRebalancer.Api.Features.Demo;
 
+public static class DemoClaim
+{
+    public const string Type = "principal_kind";
+    public const string Value = "demo";
+    public const string PolicyName = "NotADemoToken";
+}
+
 public record StartDemoSessionCommand : IRequest<DemoSessionResponse>;
 
 public record DemoSessionResponse(string Token, Guid PortfolioId, string UserId);
@@ -34,8 +41,13 @@ public sealed class StartDemoSessionHandler(AppDbContext db, IConfiguration conf
 
     public async Task<DemoSessionResponse> Handle(StartDemoSessionCommand _, CancellationToken ct)
     {
+        // Distinct users, not rows. Counting portfolios would mean a visitor
+        // who found a way to create more could exhaust everyone else's share.
         var existing = await db.Portfolios
-            .CountAsync(p => p.UserId.StartsWith(UserPrefix), ct);
+            .Where(p => p.UserId.StartsWith(UserPrefix))
+            .Select(p => p.UserId)
+            .Distinct()
+            .CountAsync(ct);
         if (existing >= Cap)
         {
             throw new DomainException(
@@ -74,8 +86,15 @@ public sealed class StartDemoSessionHandler(AppDbContext db, IConfiguration conf
 
         // Short on purpose. The token is handed to anyone who asks, so it is
         // worth only one sitting with one throwaway portfolio behind it.
+        // The demo claim is what the write endpoints key off. Without it the
+        // token is indistinguishable from a real one, and a visitor could
+        // POST /portfolios until the cap locked everyone else out.
         var token = new JwtSecurityToken(
-            claims: [new Claim(ClaimTypes.NameIdentifier, userId)],
+            claims:
+            [
+                new Claim(ClaimTypes.NameIdentifier, userId),
+                new Claim(DemoClaim.Type, DemoClaim.Value),
+            ],
             expires: DateTime.UtcNow.AddHours(2),
             signingCredentials: creds);
 

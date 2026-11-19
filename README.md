@@ -1,7 +1,7 @@
 # Portfolio Rebalancer
 
 ![CI](https://github.com/coreystevensdev/portfolio-rebalancer/actions/workflows/ci.yml/badge.svg)
-![37 tests](https://img.shields.io/badge/tests-37-brightgreen)
+![41 tests](https://img.shields.io/badge/tests-41-brightgreen)
 
 A REST API for investment portfolio drift detection and rebalancing order generation. Given a portfolio's target allocation and current market prices, it calculates drift per position and generates buy/sell orders to restore balance.
 
@@ -164,6 +164,8 @@ The sample portfolio is a drifted three-fund: equities have run, bonds have lagg
 | Variable | Default | What it does |
 | --- | --- | --- |
 | `DEMO_SESSION_CAP` | `500` | An anonymous route that writes rows needs a ceiling. Past it the route refuses. |
+
+The cap alone would not have held. A demo token is a real token, so a visitor could call `POST /portfolios` directly and write rows until the ceiling locked every later visitor out: a door with a cap on it next to an open window. Demo tokens carry a `principal_kind` claim, and the two create endpoints require its absence. They keep read, drift and rebalance, which is the whole surface the page drives. The cap counts distinct demo users rather than rows, so it measures sessions handed out and not what any one of them managed to write.
 
 Prices are static. A live quote feed would make the demo depend on a vendor, a key and a budget, and the arithmetic being shown is no more convincing for the prices being today's.
 
