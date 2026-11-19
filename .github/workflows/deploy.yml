@@ -126,6 +126,11 @@ jobs:
           JWT=$(aws ssm get-parameter --name /rebalancer/jwt-secret \
             --with-decryption --region "$REGION" --query Parameter.Value --output text)
 
+          # Exported rather than passed as -e NAME=value: docker puts argv in the
+          # process table, so the value form shows the connection string and the
+          # signing key to anything that can run ps on this box.
+          export ConnectionStrings__Postgres="$CONN" JWT_SECRET="$JWT"
+
           docker stop rebalancer 2>/dev/null || true
           docker rm rebalancer 2>/dev/null || true
 
@@ -143,8 +148,8 @@ jobs:
             -p 127.0.0.1:8084:8080 \
             --memory=288m \
             --memory-swap=768m \
-            -e "ConnectionStrings__Postgres=$CONN" \
-            -e "JWT_SECRET=$JWT" \
+            -e ConnectionStrings__Postgres \
+            -e JWT_SECRET \
             -e "ASPNETCORE_ENVIRONMENT=Production" \
             "$IMAGE"
 
