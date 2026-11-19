@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PortfolioRebalancer.Api.Behaviors;
 using PortfolioRebalancer.Api.Data;
+using PortfolioRebalancer.Api.Features.Demo;
 using PortfolioRebalancer.Api.Features.Portfolios;
 using PortfolioRebalancer.Api.Features.Rebalancing;
 using PortfolioRebalancer.Api.Middleware;
@@ -70,6 +71,11 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpMetrics();
+// The demo page. Served from the app so the page and the endpoints it drives
+// ship together and cannot drift apart between deploys.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -88,6 +94,17 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .AllowAnonymous();
 
 app.MapMetrics().AllowAnonymous();
+
+// The two demo routes sit outside the authorized group: one is where tokens
+// come from, and the other is a static price list the page needs before it has
+// one. Everything else stays behind RequireAuthorization.
+app.MapPost("/api/demo/session", async (IMediator mediator, CancellationToken ct) =>
+{
+    var result = await mediator.Send(new StartDemoSessionCommand(), ct);
+    return Results.Created($"/api/portfolios/{result.PortfolioId}", result);
+}).WithTags("Demo");
+
+app.MapGet("/api/demo/prices", () => Results.Ok(DemoData.Prices)).WithTags("Demo");
 
 var api = app.MapGroup("/api").RequireAuthorization();
 

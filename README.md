@@ -1,7 +1,7 @@
 # Portfolio Rebalancer
 
 ![CI](https://github.com/coreystevensdev/portfolio-rebalancer/actions/workflows/ci.yml/badge.svg)
-![27 tests](https://img.shields.io/badge/tests-27-brightgreen)
+![37 tests](https://img.shields.io/badge/tests-37-brightgreen)
 
 A REST API for investment portfolio drift detection and rebalancing order generation. Given a portfolio's target allocation and current market prices, it calculates drift per position and generates buy/sell orders to restore balance.
 
@@ -152,6 +152,20 @@ Outputs the EC2 public IP and ECR repository URL. See [infra/README.md](infra/RE
 **Weight validation:** Target allocations are validated to sum to 1.0 at portfolio creation (tolerance: 0.001). The database stores weights as `numeric(8,6)` to avoid floating-point drift.
 
 **Per-user isolation:** Every query filters on `UserId` extracted from the JWT `sub` claim. A user can only see and modify their own portfolios.
+
+## Demo
+
+The page at `/` runs against the real API. Every route here needs a bearer token and nothing issued one, so there was no way to show the thing working.
+
+`POST /api/demo/session` mints a genuine token for a throwaway user and seeds it a portfolio that is already out of band. A read-only bypass would have been less code and would have demonstrated nothing: the point worth showing is that two visitors in two tabs cannot reach each other's holdings, which is what every query filtering by user id at the EF level buys you.
+
+The sample portfolio is a drifted three-fund: equities have run, bonds have lagged. VNQ is left inside the tolerance band on purpose, because a portfolio where every line is flagged does not show that the band does anything.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `DEMO_SESSION_CAP` | `500` | An anonymous route that writes rows needs a ceiling. Past it the route refuses. |
+
+Prices are static. A live quote feed would make the demo depend on a vendor, a key and a budget, and the arithmetic being shown is no more convincing for the prices being today's.
 
 ## Known Limitations
 

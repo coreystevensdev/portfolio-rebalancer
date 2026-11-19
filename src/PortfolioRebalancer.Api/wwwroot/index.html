@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio Rebalancer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=Red+Hat+Mono:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23F3F0EA'/><rect x='3' y='8' width='3' height='5' fill='%23156B5C'/><rect x='7' y='4' width='3' height='9' fill='%23156B5C'/><rect x='11' y='6' width='2' height='7' fill='%23B4522E'/></svg>">
+<style>
+:root {
+  --ground: #F3F0EA;
+  --surface: #FFFDF9;
+  --surface-2: #E9E4DA;
+  --ink: #221F1A;
+  --ink-soft: #4A463E;
+  --muted: #7A746A;
+  --rule: #D6D0C4;
+  --rule-soft: #E4DFD5;
+
+  /* The signature. Interaction and editorial emphasis only. Over and under
+     weight have their own tokens so a position can never read as a control. */
+  --accent: #156B5C;
+  --accent-ink: #FFFFFF;
+  --accent-wash: #DCEAE6;
+
+  --over: #B4522E;
+  --over-wash: #F6E4DB;
+  --under: #3E6B96;
+  --under-wash: #DEE8F2;
+  --inband: #6E7A5E;
+  --inband-wash: #E7EADF;
+
+  --display: "Fraunces", Georgia, serif;
+  --body: "Work Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Red Hat Mono", ui-monospace, Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #17160F;
+    --surface: #201E17;
+    --surface-2: #2B2820;
+    --ink: #EDEAE1;
+    --ink-soft: #C6C1B5;
+    --muted: #918B7E;
+    --rule: #39352B;
+    --rule-soft: #2E2B22;
+    --accent: #5CBFA9;
+    --accent-ink: #17160F;
+    --accent-wash: #16302B;
+    --over: #E08A62;
+    --over-wash: #32201A;
+    --under: #7FA8CF;
+    --under-wash: #1B2733;
+    --inband: #A3AE8F;
+    --inband-wash: #222619;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground: #17160F;
+  --surface: #201E17;
+  --surface-2: #2B2820;
+  --ink: #EDEAE1;
+  --ink-soft: #C6C1B5;
+  --muted: #918B7E;
+  --rule: #39352B;
+  --rule-soft: #2E2B22;
+  --accent: #5CBFA9;
+  --accent-ink: #17160F;
+  --accent-wash: #16302B;
+  --over: #E08A62;
+  --over-wash: #32201A;
+  --under: #7FA8CF;
+  --under-wash: #1B2733;
+  --inband: #A3AE8F;
+  --inband-wash: #222619;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font-family: var(--body); font-size: 16px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 980px; margin: 0 auto; padding: 36px 22px 72px; }
+
+header { margin-bottom: 26px; }
+h1 {
+  font-family: var(--display); font-weight: 700; font-size: 34px;
+  font-variation-settings: "opsz" 40; letter-spacing: -.016em;
+  margin: 0 0 8px; line-height: 1.08;
+}
+.lede { color: var(--ink-soft); max-width: 60ch; margin: 0; }
+.sess {
+  font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule);
+}
+.sess b { color: var(--ink-soft); font-weight: 500; }
+
+h2 {
+  font-family: var(--display); font-weight: 600; font-size: 19px;
+  font-variation-settings: "opsz" 24; margin: 0 0 4px;
+}
+.note { font-size: 13.5px; color: var(--muted); margin: 0 0 14px; }
+section { margin-bottom: 30px; }
+
+.totals { display: flex; flex-wrap: wrap; gap: 1px; background: var(--rule-soft); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
+.totals > div { background: var(--surface); padding: 13px 18px; flex: 1 1 150px; }
+.totals .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.totals .v { font-family: var(--display); font-weight: 600; font-size: 25px; font-variation-settings: "opsz" 32; margin-top: 2px; }
+
+.scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; }
+th {
+  text-align: left; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  padding: 12px 14px; border-bottom: 1px solid var(--rule); background: var(--surface-2);
+  white-space: nowrap;
+}
+td { padding: 12px 14px; border-bottom: 1px solid var(--rule-soft); font-size: 14.5px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+td.tk { font-family: var(--mono); font-weight: 600; }
+td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+
+/* The drift bar is the point of the screen: target sits at the centre line and
+   the bar runs out to whichever side the position has moved. */
+.driftcell { min-width: 190px; }
+.track { position: relative; height: 22px; background: var(--surface-2); border-radius: 2px; }
+.track::before {
+  content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px;
+  width: 1px; background: var(--rule);
+}
+.track .b { position: absolute; top: 4px; height: 14px; border-radius: 1px; }
+.track .b.over { background: var(--over); left: 50%; }
+.track .b.under { background: var(--under); right: 50%; }
+.track .b.inband { background: var(--inband); }
+
+.tag {
+  display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: .09em; text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+}
+.tag.over { background: var(--over-wash); color: var(--over); }
+.tag.under { background: var(--under-wash); color: var(--under); }
+.tag.inband { background: var(--inband-wash); color: var(--inband); }
+
+button {
+  font-family: var(--display); font-weight: 600; font-size: 15px;
+  font-variation-settings: "opsz" 20;
+  padding: 11px 22px; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink);
+  border: 1.5px solid var(--accent); border-radius: 3px;
+}
+button:hover { filter: brightness(1.08); }
+button:disabled { opacity: .5; cursor: progress; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+button.ghost { background: transparent; color: var(--accent); }
+
+.orders td.act { font-family: var(--mono); font-size: 12.5px; font-weight: 600; }
+.orders td.act.Sell { color: var(--over); }
+.orders td.act.Buy { color: var(--under); }
+.orders tbody tr.sellband { background: var(--over-wash); }
+
+.msg {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-left: 4px solid var(--over); border-radius: 4px;
+  padding: 14px 17px; margin-bottom: 20px; color: var(--ink-soft); font-size: 14.5px;
+}
+.msg.hidden { display: none; }
+.hidden { display: none; }
+
+footer { margin-top: 42px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 13.5px; color: var(--muted); }
+footer a { color: var(--accent); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+section.in { animation: rise .3s ease-out backwards; }
+section.in:nth-of-type(2) { animation-delay: .06s; }
+section.in:nth-of-type(3) { animation-delay: .12s; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (max-width: 600px) { .wrap { padding: 26px 15px 56px; } h1 { font-size: 27px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Portfolio Rebalancer</h1>
+  <p class="lede">
+    Shows which holdings have drifted away from the allocation you picked, and what to
+    buy and sell to put them back. Sells are listed first, because their proceeds are
+    what pays for the buys.
+  </p>
+  <p class="sess" id="sess">Starting a session</p>
+</header>
+
+<div class="msg hidden" id="msg"></div>
+
+<section id="driftSection" class="hidden">
+  <h2>Drift</h2>
+  <p class="note">
+    Each bar runs from the target at the centre line out to where the position actually
+    sits, measured in percentage points. Anything past the <b id="tolText">tolerance</b>
+    is flagged.
+  </p>
+  <div class="totals" id="totals"></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Ticker</th><th>Target</th><th>Actual</th><th class="driftcell">Drift</th><th>Value</th><th>State</th></tr></thead>
+      <tbody id="driftRows"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="actions" class="hidden">
+  <button id="go">Rebalance this portfolio</button>
+  <button id="again" class="ghost hidden">Start a fresh session</button>
+</section>
+
+<section id="orderSection" class="hidden">
+  <h2>Orders</h2>
+  <p class="note">Generated by the engine, in the order it intends them to execute.</p>
+  <div class="scroll">
+    <table class="orders">
+      <thead><tr><th>#</th><th>Action</th><th>Ticker</th><th>Shares</th><th>Estimated value</th></tr></thead>
+      <tbody id="orderRows"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <p id="auth"></p>
+  <p>
+    ASP.NET Core with MediatR vertical slices and EF Core against PostgreSQL. Every query
+    filters by the caller's user id at the EF level, so this page holds a real bearer
+    token rather than bypassing auth.
+    <a href="https://github.com/coreystevensdev/portfolio-rebalancer">Source</a>.
+  </p>
+</footer>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pct = (n) => (Number(n) * 100).toFixed(1) + "%";
+// driftPct arrives already in percentage points, unlike the weights, which are
+// fractions. A difference between two percentages is points, not a percentage.
+const pts = (n) => (n > 0 ? "+" : "") + Number(n).toFixed(1) + " pts";
+const usd = (n) => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+let token = null, portfolioId = null, prices = null, tolerance = 5;
+
+function fail(text) {
+  $("msg").textContent = text;
+  $("msg").classList.remove("hidden");
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: {"Content-Type": "application/json", ...(token ? {Authorization: "Bearer " + token} : {}), ...(opts.headers || {})},
+  });
+  if (!res.ok) throw new Error(`${path} returned ${res.status}`);
+  return res.json();
+}
+
+function renderDrift(report) {
+  $("totals").innerHTML = `
+    <div><div class="k">Portfolio value</div><div class="v">${esc(usd(report.totalPortfolioValue))}</div></div>
+    <div><div class="k">Positions</div><div class="v">${report.positions.length}</div></div>
+    <div><div class="k">Out of band</div><div class="v">${report.positions.filter(p => p.isOutOfBand).length}</div></div>`;
+
+  // Scaled against the largest drift on screen so the widest bar fills its half.
+  const widest = Math.max(...report.positions.map(p => Math.abs(p.driftPct)), 0.01);
+
+  $("driftRows").innerHTML = report.positions.map(p => {
+    const d = Number(p.driftPct);
+    const kind = !p.isOutOfBand ? "inband" : (d > 0 ? "over" : "under");
+    const width = (Math.abs(d) / widest) * 48;
+    return `<tr>
+      <td class="tk">${esc(p.ticker)}</td>
+      <td class="n">${esc(pct(p.targetWeight))}</td>
+      <td class="n">${esc(pct(p.actualWeight))}</td>
+      <td class="driftcell"><div class="track"><div class="b ${kind}" style="width:${width}%"></div></div></td>
+      <td class="n">${esc(usd(p.marketValue))}</td>
+      <td><span class="tag ${kind}">${kind === "inband" ? "in band " + esc(pts(d)) : (d > 0 ? "over " + esc(pts(d)) : "under " + esc(pts(d)))}</span></td>
+    </tr>`;
+  }).join("");
+
+  $("driftSection").classList.remove("hidden");
+  $("driftSection").classList.add("in");
+  $("actions").classList.remove("hidden");
+}
+
+function renderOrders(result) {
+  const orders = result.orders || [];
+  if (!orders.length) {
+    $("orderRows").innerHTML = `<tr><td colspan="5">Nothing to do: no position is outside its band.</td></tr>`;
+  } else {
+    $("orderRows").innerHTML = orders.map((o, i) => `
+      <tr class="${o.action === "Sell" ? "sellband" : ""}">
+        <td class="n">${i + 1}</td>
+        <td class="act ${esc(o.action)}">${esc(o.action)}</td>
+        <td class="tk">${esc(o.ticker)}</td>
+        <td class="n">${Number(o.shares).toFixed(4)}</td>
+        <td class="n">${esc(usd(o.estimatedValue))}</td>
+      </tr>`).join("");
+  }
+  $("orderSection").classList.remove("hidden");
+  $("orderSection").classList.add("in");
+  $("again").classList.remove("hidden");
+}
+
+async function start() {
+  try {
+    const session = await api("/api/demo/session", {method: "POST"});
+    token = session.token;
+    portfolioId = session.portfolioId;
+
+    prices = await api("/api/demo/prices");
+
+    const portfolio = await api(`/api/portfolios/${portfolioId}`);
+    tolerance = portfolio.driftTolerancePct;
+    $("tolText").textContent = `${tolerance} point band`;
+
+    $("sess").innerHTML = `Session user <b>${esc(session.userId)}</b> &middot; portfolio <b>${esc(portfolioId)}</b>`;
+    $("auth").textContent = `Every request on this page carried a bearer token for ${session.userId}. Open a second tab and it gets a different user, which cannot read this one's holdings.`;
+
+    renderDrift(await api(`/api/portfolios/${portfolioId}/drift`, {
+      method: "POST", body: JSON.stringify({prices}),
+    }));
+  } catch (e) {
+    fail("Could not start a demo session. " + e.message);
+    $("sess").textContent = "";
+  }
+}
+
+$("go").addEventListener("click", async () => {
+  const btn = $("go");
+  btn.disabled = true;
+  btn.textContent = "Working";
+  try {
+    renderOrders(await api(`/api/portfolios/${portfolioId}/rebalance`, {
+      method: "POST", body: JSON.stringify({prices}),
+    }));
+    btn.classList.add("hidden");
+  } catch (e) {
+    fail("The rebalance did not complete. " + e.message);
+    btn.disabled = false;
+    btn.textContent = "Rebalance this portfolio";
+  }
+});
+
+$("again").addEventListener("click", () => location.reload());
+
+start();
+</script>
+</body>
+</html>
