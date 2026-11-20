@@ -5,7 +5,9 @@
 
 A REST API for investment portfolio drift detection and rebalancing order generation. Given a portfolio's target allocation and current market prices, it calculates drift per position and generates buy/sell orders to restore balance.
 
-Deploy via Terraform and run on EC2 (see [Deployment](#deployment)). No persistent live URL: EC2 provisioning costs apply; spin up locally with `docker compose up`.
+**[Try it: rebalancer.coreystevens.dev](https://rebalancer.coreystevens.dev/)**: the page holds a real bearer token, so opening a second tab gets a different user who cannot read the first one's holdings. Swagger is at [/swagger](https://rebalancer.coreystevens.dev/swagger).
+
+Deploy via Terraform and run on EC2 (see [Deployment](#deployment)), or spin up locally with `docker compose up`.
 
 ## Problem
 
