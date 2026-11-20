@@ -130,7 +130,9 @@ jwt encode --secret "your-secret" --sub "user-id-1"
 dotnet test
 ```
 
-Tests: 18 unit (domain logic, no DB) + 9 integration (real PostgreSQL via TestContainers).
+Tests: 18 unit (domain logic, no DB) + 23 integration (real PostgreSQL via TestContainers), which is the 41 the badge reports. The integration count grew by 14 when `DemoSessionTests` landed; the badge moved and this sentence did not, so for a while the two disagreed four lines apart.
+
+Three decisions have their own records: [MediatR over controllers](docs/adr/ADR-001-mediatr-over-controllers.md), [TestContainers over SQLite](docs/adr/ADR-002-testcontainers-over-sqlite.md), and [per-column numeric scale](docs/adr/ADR-003-numeric-precision-for-financial-values.md).
 
 ## Deployment
 
