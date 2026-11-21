@@ -1,3 +1,6 @@
+# Prepared as a deploy target and never used. The deploy runs on EC2 via
+# infra/terraform. Kept as a record of the alternative, nothing reads this.
+
 [build]
 builder = "dockerfile"
 

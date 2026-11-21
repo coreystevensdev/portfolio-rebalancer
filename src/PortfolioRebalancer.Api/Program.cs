@@ -40,7 +40,9 @@ builder.Services.AddAuthorization(options =>
             !ctx.User.HasClaim(DemoClaim.Type, DemoClaim.Value)));
 });
 
-// Accepts Npgsql format via ConnectionStrings:Postgres or Railway's DATABASE_URL URI.
+// Either source has to be an Npgsql keyword string. DATABASE_URL is a name some
+// hosts use, not a format: a postgresql:// URI reaches UseNpgsql unconverted and
+// throws on the first connection rather than at startup.
 var pgConnectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? builder.Configuration["DATABASE_URL"]
     ?? throw new InvalidOperationException("ConnectionStrings:Postgres or DATABASE_URL is required.");
