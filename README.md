@@ -7,7 +7,7 @@ A REST API for investment portfolio drift detection and rebalancing order genera
 
 **[Try it: rebalancer.coreystevens.dev](https://rebalancer.coreystevens.dev/)**: the page holds a real bearer token, so opening a second tab gets a different user who cannot read the first one's holdings. Swagger is at [/swagger](https://rebalancer.coreystevens.dev/swagger).
 
-Deploy via Terraform and run on EC2 (see [Deployment](#deployment)), or spin up locally with `docker compose up`.
+Deployed from `main` on every push (see [Deployment](#deployment)), or spin up locally with `docker compose up`.
 
 ## Problem
 
@@ -41,7 +41,7 @@ All drift calculation and order generation is pure domain logic with no framewor
 | Database | PostgreSQL 16 | Reliable, decimal-safe arithmetic (no float rounding in financial math) |
 | Auth | JWT HS256 (JwtBearer 10) | Stateless; UserId claim scopes every query to the calling user |
 | Testing | xUnit + TestContainers.PostgreSql + FluentAssertions | Integration tests hit a real PostgreSQL container, not SQLite or mocks |
-| Infra | Terraform (AWS EC2 t2.micro + RDS db.t3.micro) | Free-tier eligible; OIDC GitHub Actions deploy (no stored credentials) |
+| Infra | Docker on EC2, deployed over SSM | Shares one `t3.small` with five other demos behind the same Caddy, which terminates TLS; OIDC GitHub Actions deploy (no stored credentials) |
 
 ## API Reference
 
@@ -180,5 +180,4 @@ Prices are static. A live quote feed would make the demo depend on a vendor, a k
 - Prices are caller-supplied: there is no market data integration. The caller is responsible for providing current prices at drift/rebalance time.
 - Rate limiting is not implemented. Intended as a private API behind authentication.
 - Lot-level FIFO sell assignment (tax-loss harvesting order) is not implemented. Orders specify share counts only.
-- In-production HTTPS requires a reverse proxy (nginx or ALB with ACM certificate) in front of the container.
-- The free-tier RDS instance (db.t3.micro) has limited IOPS; not suitable for high-volume workloads.
+- The API and its database sit on one instance, and that Postgres container serves two other demos from their own databases. There is no redundancy: losing the box loses the service and the data together.
