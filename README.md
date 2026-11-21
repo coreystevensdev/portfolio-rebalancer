@@ -139,14 +139,13 @@ Three decisions have their own records: [MediatR over controllers](docs/adr/ADR-
 
 ## Deployment
 
-```bash
-cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edit with db_password, jwt_secret, ecr_image_uri
+Every push to `main` deploys: CI builds the image, pushes it to ECR, and
+`.github/workflows/deploy.yml` restarts the container over SSM on the shared
+instance.
 
-terraform init
-terraform apply
-```
+The Terraform under `infra/terraform/` describes a dedicated instance that is
+not what runs. See [infra/README.md](infra/README.md), which says so in its
+first line.
 
 Outputs the EC2 public IP and ECR repository URL. See [infra/README.md](infra/README.md) for full deployment steps including OIDC setup.
 
