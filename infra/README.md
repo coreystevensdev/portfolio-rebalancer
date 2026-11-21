@@ -1,4 +1,18 @@
-# Infrastructure
+# Infrastructure, a path not taken
+
+**This is not how portfolio-rebalancer is deployed.** The live service runs as a
+container named `rebalancer` on a shared `t3.small`, started by `docker run` over
+SSM and bound to `127.0.0.1:8084`, behind Caddy. `.github/workflows/deploy.yml`
+is the real path.
+
+The Terraform here stands up a dedicated instance publishing `-p 80:8080` with
+the connection string and JWT secret interpolated into `user_data`. Nothing
+deploys that way. Only the ECR repository and the GitHub OIDC role are consumed
+by the live workflow, and applying the rest bills an instance the project does
+not use.
+
+Kept because the Terraform is real and reviewable, not as a runbook to follow.
+
 
 AWS deployment using Terraform. Uses EC2 t2.micro + RDS db.t3.micro, both free-tier eligible for 12 months on a new AWS account.
 
@@ -31,7 +45,7 @@ aws iam create-open-id-connect-provider \
   --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
 ```
 
-Then create an IAM role that trusts the OIDC provider and set `AWS_DEPLOY_ROLE_ARN` as a GitHub Actions secret.
+Then create an IAM role that trusts the OIDC provider and set `AWS_ROLE_ARN` as a GitHub Actions secret. The workflow reads that exact name, and a secret called `AWS_DEPLOY_ROLE_ARN` leaves `role-to-assume` empty, which fails OIDC with nothing obvious to point at.
 
 ### 3. Create terraform.tfvars
 
@@ -65,9 +79,13 @@ docker push <ecr-url>:latest
 ### 6. Add GitHub secrets
 
 Set these in the repo's Settings > Secrets > Actions:
-- `AWS_DEPLOY_ROLE_ARN`
+- `AWS_ROLE_ARN`
 - `EC2_INSTANCE_ID`
-- `POSTGRES_CONN_STRING`
-- `JWT_SECRET`
+- `ECR_REPO`
+
+`POSTGRES_CONN_STRING` and `JWT_SECRET` are not GitHub secrets. The deploy reads
+them from SSM Parameter Store at `/rebalancer/postgres-conn` and
+`/rebalancer/jwt-secret`, on the box, so they never enter a workflow log. No
+Terraform in this directory creates those parameters.
 
 After that, every push to `main` triggers the deploy workflow automatically.
