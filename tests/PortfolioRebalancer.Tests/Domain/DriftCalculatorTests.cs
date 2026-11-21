@@ -17,20 +17,38 @@ public class DriftCalculatorTests
     }
 
     [Fact]
-    public void ReturnsZeroDriftWhenPortfolioIsBalanced()
+    public void ReturnsZeroValuesWhenPortfolioHasNoHoldings()
     {
         var portfolio = BuildPortfolio();
         var prices = new Dictionary<string, decimal> { ["AAPL"] = 100m, ["MSFT"] = 100m };
 
-        // Add holdings that match the target exactly: 60/40 split.
-        // We can't call AddHolding through EF here, so we use reflection for testing.
-        // Instead, test with actual drift calculation math only via a real portfolio.
         var report = DriftCalculator.Calculate(portfolio, prices);
 
-        // No holdings at all: all market values are 0, total is 0.
+        // Named for the empty case because that is what it builds. With a total
+        // of 0 the actual weights are 0 and the drifts are -60 and -40, so this
+        // is the maximum-drift case, not the balanced one. The balanced case is
+        // the test below.
         report.TotalPortfolioValue.Should().Be(0m);
         report.Positions.Should().HaveCount(2);
         report.Positions.All(p => p.MarketValue == 0).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ReturnsZeroDriftWhenHoldingsMatchTheTargetExactly()
+    {
+        var portfolio = BuildPortfolio();
+        // 60 shares AAPL @ $100 = $6,000 (60% actual vs 60% target = 0 drift)
+        // 40 shares MSFT @ $100 = $4,000 (40% actual vs 40% target = 0 drift)
+        portfolio.Holdings.Add(Holding.Create(portfolio.Id, "AAPL", [(60m, 90m, DateOnly.FromDateTime(DateTime.Today))]));
+        portfolio.Holdings.Add(Holding.Create(portfolio.Id, "MSFT", [(40m, 90m, DateOnly.FromDateTime(DateTime.Today))]));
+        var prices = new Dictionary<string, decimal> { ["AAPL"] = 100m, ["MSFT"] = 100m };
+
+        var report = DriftCalculator.Calculate(portfolio, prices);
+
+        report.TotalPortfolioValue.Should().Be(10_000m);
+        report.Positions.Single(p => p.Ticker == "AAPL").DriftPct.Should().Be(0m);
+        report.Positions.Single(p => p.Ticker == "MSFT").DriftPct.Should().Be(0m);
+        report.Positions.All(p => !p.IsOutOfBand).Should().BeTrue();
     }
 
     [Fact]
