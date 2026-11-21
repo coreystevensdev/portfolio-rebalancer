@@ -45,17 +45,20 @@ All drift calculation and order generation is pure domain logic with no framewor
 
 ## API Reference
 
-All `/api/*` endpoints require `Authorization: Bearer <jwt>`.
+Everything under `/api` requires `Authorization: Bearer <jwt>` except the two demo routes below, which sit outside the authorized group because one is where a token comes from and the other is the price list the page needs before it has one.
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/health` | liveness check |
-| POST | `/api/portfolios` | create portfolio with target allocations |
-| GET | `/api/portfolios/{id}` | get portfolio |
-| POST | `/api/portfolios/{id}/holdings` | add a holding with purchase lots |
-| POST | `/api/portfolios/{id}/drift` | calculate drift (body: `{ prices: {...} }`) |
-| POST | `/api/portfolios/{id}/rebalance` | generate and persist rebalancing orders |
-| GET | `/api/portfolios/{id}/rebalance` | rebalancing history |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/health` | none | liveness check |
+| GET | `/metrics` | none | Prometheus scrape |
+| POST | `/api/demo/session` | none | start a demo session, returns a scoped token |
+| GET | `/api/demo/prices` | none | static price list for the demo page |
+| POST | `/api/portfolios` | bearer | create portfolio with target allocations |
+| GET | `/api/portfolios/{id}` | bearer | get portfolio |
+| POST | `/api/portfolios/{id}/holdings` | bearer | add a holding with purchase lots |
+| POST | `/api/portfolios/{id}/drift` | bearer | calculate drift (body: `{ prices: {...} }`) |
+| POST | `/api/portfolios/{id}/rebalance` | bearer | generate and persist rebalancing orders |
+| GET | `/api/portfolios/{id}/rebalance` | bearer | rebalancing history |
 
 ### Example: Create and rebalance
 
