@@ -13,6 +13,8 @@ not use.
 
 Kept because the Terraform is real and reviewable, not as a runbook to follow.
 
+The Helm chart under `helm/` is the same situation and has its own note: [helm/README.md](helm/README.md).
+
 
 AWS deployment using Terraform. Uses EC2 t2.micro + RDS db.t3.micro, both free-tier eligible for 12 months on a new AWS account.
 
