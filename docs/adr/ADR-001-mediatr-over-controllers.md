@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-06-01
+**Amended:** 2026-11-21. The handlers never carried a `Command` or `Query` infix, and two more exist now than this listed. The decision is unchanged.
 
 ## Context
 
@@ -13,17 +14,22 @@ Three-layer architecture (controller -> service -> repository) is familiar and w
 
 Use MediatR 12 to implement each API operation as a self-contained vertical slice: one command or query record, one handler class, collocated in a `Features/` folder organized by business capability rather than technical layer.
 
-- `POST /portfolios` -> `CreatePortfolioCommand` + `CreatePortfolioCommandHandler`
-- `GET /portfolios/{id}` -> `GetPortfolioQuery` + `GetPortfolioQueryHandler`
-- `POST /portfolios/{id}/holdings` -> `AddHoldingCommand` + `AddHoldingCommandHandler`
-- `POST /portfolios/{id}/drift` -> `GetDriftQuery` + `GetDriftQueryHandler`
-- `POST /portfolios/{id}/rebalance` -> `RebalanceCommand` + `RebalanceCommandHandler`
+- `POST /portfolios` -> `CreatePortfolioCommand` + `CreatePortfolioHandler`
+- `GET /portfolios/{id}` -> `GetPortfolioQuery` + `GetPortfolioHandler`
+- `POST /portfolios/{id}/holdings` -> `AddHoldingCommand` + `AddHoldingHandler`
+- `POST /portfolios/{id}/drift` -> `GetDriftQuery` + `GetDriftHandler`
+- `POST /portfolios/{id}/rebalance` -> `RebalanceCommand` + `RebalanceHandler`
+- `GET /portfolios/{id}/history` -> `GetHistoryQuery` + `GetHistoryHandler`
+- `POST /api/demo/session` -> `StartDemoSessionCommand` + `StartDemoSessionHandler`
+
+The request types carry the `Command` and `Query` suffix; the handlers do not
+repeat it.
 
 Each handler is responsible for authorization (ownership check), validation, domain logic invocation, and persistence. There is no shared service layer.
 
 ## Consequences
 
-**Better:** Each operation can be understood and modified in isolation. A developer reading `RebalanceCommandHandler` does not need to understand the portfolio creation flow to make a change. Adding a new operation does not risk breaking existing ones. The command/query distinction (CQRS at the handler level) makes read vs. write paths explicit.
+**Better:** Each operation can be understood and modified in isolation. A developer reading `RebalanceHandler` does not need to understand the portfolio creation flow to make a change. Adding a new operation does not risk breaking existing ones. The command/query distinction (CQRS at the handler level) makes read vs. write paths explicit.
 
 **Worse:** More files than a classic controller approach. Developers unfamiliar with MediatR need to learn where the dispatch call in `Program.cs` connects to handlers. Cross-cutting concerns (like the ownership check) are duplicated across handlers rather than extracted to a base class; this is acceptable here because each check is one line and extracting it would hide a security-critical invariant.
 

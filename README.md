@@ -25,7 +25,7 @@ flowchart TD
     B --> C["MediatR vertical-slice handlers\none handler per feature"]
     C --> D["DriftCalculator\n(pure domain, no framework deps)"]
     C --> E["RebalancingEngine\n(pure domain, no framework deps)"]
-    D & E --> F["EF Core 10 + Npgsql"]
+    C --> F["EF Core 10 + Npgsql"]
     F --> G[(PostgreSQL 16)]
 ```
 
@@ -178,6 +178,6 @@ Prices are static. A live quote feed would make the demo depend on a vendor, a k
 ## Known Limitations
 
 - Prices are caller-supplied: there is no market data integration. The caller is responsible for providing current prices at drift/rebalance time.
-- Rate limiting is not implemented. Intended as a private API behind authentication.
+- Rate limiting is not implemented, and one route is anonymous. `POST /api/demo/session` is declared above the `RequireAuthorization` group so a visitor can mint a token, and it writes a portfolio and holdings. The only control is `DEMO_SESSION_CAP`, one global pool of 500 distinct demo users; past that the route refuses for everyone until the rows are cleared by hand, which its own error message says a visitor cannot trigger. Every other route needs a token.
 - Lot-level FIFO sell assignment (tax-loss harvesting order) is not implemented. Orders specify share counts only.
 - The API and its database sit on one instance, and that Postgres container serves two other demos from their own databases. There is no redundancy: losing the box loses the service and the data together.
