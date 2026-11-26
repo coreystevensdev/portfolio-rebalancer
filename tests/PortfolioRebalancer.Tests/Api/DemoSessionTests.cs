@@ -142,7 +142,8 @@ public class DemoSessionTests : IAsyncLifetime
     [Fact]
     public async Task TheSeededPortfolioRebalancesIntoSellsBeforeBuys()
     {
-        // The ordering is the domain claim: proceeds from sells fund the buys.
+        // The ordering is the domain claim. Ordering only: the plan is not cash-neutral,
+        // because in-band overweights are never sold. See Known Limitations.
         var (token, portfolioId) = await StartSession();
         var client = Authed(_factory.CreateClient(), token);
 
@@ -323,5 +324,55 @@ public class DemoSessionTests : IAsyncLifetime
         created.Should().BeLessThan(5, "the cap has to actually stop something");
         statuses.Should().Contain(s => s != HttpStatusCode.Created,
             "past the cap the route refuses rather than growing the table");
+    }
+
+    [Fact]
+    public async Task AFullCapRecoversOnceSessionsExpire()
+    {
+        // The cap used to latch. Once 500 distinct demo users existed the route
+        // refused for everyone until rows were cleared by hand, which its own error
+        // message says a visitor cannot trigger, so a short script could take the
+        // live demo offline indefinitely. Reaping expired rows before counting makes
+        // it a rolling window. Asserting only that a refusal happens would pass with
+        // a latch too, so this fills the cap, ages the rows past the token lifetime,
+        // and watches the next request succeed.
+        using var capped = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(host =>
+            {
+                host.ConfigureServices(services =>
+                {
+                    var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+                    if (descriptor != null) services.Remove(descriptor);
+                    services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(_postgres.GetConnectionString()));
+                });
+                host.UseSetting("JWT_SECRET", TestJwt.Secret);
+                host.UseSetting("ConnectionStrings:Postgres", _postgres.GetConnectionString());
+                host.UseSetting("DEMO_SESSION_CAP", "1");
+            });
+
+        using var scope = capped.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // Start from an empty demo pool so the cap of 1 means what it says.
+        db.Portfolios.RemoveRange(await db.Portfolios.Where(p => p.UserId.StartsWith("demo-")).ToListAsync());
+        await db.SaveChangesAsync();
+
+        var client = capped.CreateClient();
+        (await client.PostAsync("/api/demo/session", null)).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await client.PostAsync("/api/demo/session", null)).StatusCode.Should()
+            .NotBe(HttpStatusCode.Created, "the cap is full");
+
+        // Age every demo row past the token lifetime, which is what a visitor
+        // walking away does. CreatedAt has no public setter and should not get one
+        // for a test's convenience, so this writes through EF's change tracker to
+        // the backing field instead of widening the domain.
+        foreach (var p in await db.Portfolios.Where(x => x.UserId.StartsWith("demo-")).ToListAsync())
+        {
+            db.Entry(p).Property(x => x.CreatedAt).CurrentValue = DateTimeOffset.UtcNow.AddHours(-3);
+        }
+        await db.SaveChangesAsync();
+
+        (await client.PostAsync("/api/demo/session", null)).StatusCode.Should()
+            .Be(HttpStatusCode.Created, "an expired session must not hold the cap against the next visitor");
     }
 }

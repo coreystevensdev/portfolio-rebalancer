@@ -39,8 +39,30 @@ public sealed class StartDemoSessionHandler(AppDbContext db, IConfiguration conf
     // route refuses rather than growing the table forever.
     private int Cap => config.GetValue("DEMO_SESSION_CAP", 500);
 
+    // How long a demo token is good for, and therefore how long its rows are
+    // reachable by the visitor who made them. One constant drives both the token
+    // expiry below and the reap cutoff, because two numbers would drift and the
+    // reap would either delete live sessions or never catch up.
+    private static readonly TimeSpan DemoLifetime = TimeSpan.FromHours(2);
+
     public async Task<DemoSessionResponse> Handle(StartDemoSessionCommand _, CancellationToken ct)
     {
+        // Reap before counting, which is what makes the cap a window instead of a
+        // latch. Once a demo token expires its rows cannot be reached by anyone, so
+        // holding them against the cap only denies the demo to the next visitor.
+        // Before this, 500 sessions took the live demo offline until someone cleared
+        // rows by hand, which the error message below correctly says a visitor cannot
+        // do. Every child row cascades from Portfolio, so this one delete is enough.
+        var cutoff = DateTimeOffset.UtcNow - DemoLifetime;
+        var expired = await db.Portfolios
+            .Where(p => p.UserId.StartsWith(UserPrefix) && p.CreatedAt < cutoff)
+            .ToListAsync(ct);
+        if (expired.Count > 0)
+        {
+            db.Portfolios.RemoveRange(expired);
+            await db.SaveChangesAsync(ct);
+        }
+
         // Distinct users, not rows. Counting portfolios would mean a visitor
         // who found a way to create more could exhaust everyone else's share.
         var existing = await db.Portfolios
@@ -95,7 +117,7 @@ public sealed class StartDemoSessionHandler(AppDbContext db, IConfiguration conf
                 new Claim(ClaimTypes.NameIdentifier, userId),
                 new Claim(DemoClaim.Type, DemoClaim.Value),
             ],
-            expires: DateTime.UtcNow.AddHours(2),
+            expires: DateTime.UtcNow.Add(DemoLifetime),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

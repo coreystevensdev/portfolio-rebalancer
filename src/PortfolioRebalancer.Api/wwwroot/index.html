@@ -191,8 +191,9 @@ section.in:nth-of-type(3) { animation-delay: .12s; }
   <h1>Portfolio Rebalancer</h1>
   <p class="lede">
     Shows which holdings have drifted away from the allocation you picked, and what to
-    buy and sell to put them back. Sells are listed first, because their proceeds are
-    what pays for the buys.
+    buy and sell to put them back. Sells are listed first so a broker working down the
+    list frees cash before spending it, though only positions outside your tolerance band
+    trade, so the sells do not always cover the buys.
   </p>
   <p class="sess" id="sess">Starting a session</p>
 </header>

@@ -1,7 +1,7 @@
 # Portfolio Rebalancer
 
 ![CI](https://github.com/coreystevensdev/portfolio-rebalancer/actions/workflows/ci.yml/badge.svg)
-![42 tests](https://img.shields.io/badge/tests-42-brightgreen)
+![48 tests](https://img.shields.io/badge/tests-48-brightgreen)
 
 A REST API for investment portfolio drift detection and rebalancing order generation. Given a portfolio's target allocation and current market prices, it calculates drift per position and generates buy/sell orders to restore balance.
 
@@ -15,7 +15,7 @@ Maintaining a target asset allocation requires periodic rebalancing as market pr
 
 ## Solution
 
-A stateful REST API that persists portfolio definitions (target allocations, drift tolerance) and purchase history (lots with cost basis), then computes drift and generates orders on demand. Sells are always sequenced before buys so proceeds fund purchases.
+A stateful REST API that persists portfolio definitions (target allocations, drift tolerance) and purchase history (lots with cost basis), then computes drift and generates orders on demand. Sells are always sequenced before buys, which is an ordering guarantee and not a funding one: only out-of-band positions trade, so an in-band overweight is never sold and the plan can need outside cash.
 
 ## Architecture
 
@@ -133,7 +133,7 @@ jwt encode --secret "your-secret" --sub "user-id-1"
 dotnet test
 ```
 
-Tests: 18 unit (domain logic, no DB) + 23 integration (real PostgreSQL via TestContainers), which is the 41 the badge reports. The integration count grew by 14 when `DemoSessionTests` landed; the badge moved and this sentence did not, so for a while the two disagreed four lines apart.
+Tests: 24 unit (domain logic, no DB) + 24 integration (real PostgreSQL via TestContainers), which is the 48 the badge reports. Counted by namespace from `dotnet test --list-tests`, because a `[Theory]` counts once in the source and once per case in the runner, which is how an earlier version of this sentence ended up claiming 18 and 41 against a badge of 42. CI fails the build when the badge disagrees with the runner's total. Nothing checks this sentence.
 
 Three decisions have their own records: [MediatR over controllers](docs/adr/ADR-001-mediatr-over-controllers.md), [TestContainers over SQLite](docs/adr/ADR-002-testcontainers-over-sqlite.md), and [per-column numeric scale](docs/adr/ADR-003-numeric-precision-for-financial-values.md).
 
@@ -153,7 +153,7 @@ Outputs the EC2 public IP and ECR repository URL. See [infra/README.md](infra/RE
 
 **Drift formula:** `drift_pct = (actual_weight - target_weight) * 100`. A position is out-of-band when `|drift_pct| > drift_tolerance_pct`.
 
-**Order sizing:** `shares_to_trade = |target_value - actual_value| / price`. Sells generated first (proceeds fund buys).
+**Order sizing:** `shares_to_trade = |target_value - actual_value| / price`. Sells generated first, so a broker executing in order frees cash before spending it. That is ordering, not sufficiency: see Known Limitations.
 
 **Weight validation:** Target allocations are validated to sum to 1.0 at portfolio creation (tolerance: 0.001). The database stores weights as `numeric(8,6)` to avoid floating-point drift.
 
@@ -169,7 +169,7 @@ The sample portfolio is a drifted three-fund: equities have run, bonds have lagg
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `DEMO_SESSION_CAP` | `500` | An anonymous route that writes rows needs a ceiling. Past it the route refuses. |
+| `DEMO_SESSION_CAP` | `500` | An anonymous route that writes rows needs a ceiling. Past it the route refuses until older sessions expire. |
 
 The cap alone would not have held. A demo token is a real token, so a visitor could call `POST /portfolios` directly and write rows until the ceiling locked every later visitor out: a door with a cap on it next to an open window. Demo tokens carry a `principal_kind` claim, and the two create endpoints require its absence. They keep read, drift and rebalance, which is the whole surface the page drives. The cap counts distinct demo users rather than rows, so it measures sessions handed out and not what any one of them managed to write.
 
@@ -178,6 +178,7 @@ Prices are static. A live quote feed would make the demo depend on a vendor, a k
 ## Known Limitations
 
 - Prices are caller-supplied: there is no market data integration. The caller is responsible for providing current prices at drift/rebalance time.
-- Rate limiting is not implemented, and one route is anonymous. `POST /api/demo/session` is declared above the `RequireAuthorization` group so a visitor can mint a token, and it writes a portfolio and holdings. The only control is `DEMO_SESSION_CAP`, one global pool of 500 distinct demo users; past that the route refuses for everyone until the rows are cleared by hand, which its own error message says a visitor cannot trigger. Every other route needs a token.
+- Rate limiting is not implemented, and one route is anonymous. `POST /api/demo/session` is declared above the `RequireAuthorization` group so a visitor can mint a token, and it writes a portfolio and holdings. The control is `DEMO_SESSION_CAP`, one global pool of 500 distinct demo users. That pool is a rolling window rather than a latch: each call first deletes demo portfolios older than the two-hour token lifetime, so a full cap recovers on its own instead of refusing every visitor until rows are cleared by hand. There is still no per-IP throttle, so a script can hold the whole pool for two hours at a time. Every other route needs a token.
+- The generated plan is not cash-neutral. `RebalancingEngine` trades only positions outside the drift tolerance, which is the point of having a tolerance, so an overweight position that is still in band is never sold. On the seeded demo that is VNQ: $8,383.75 held against a $7,875.08 target, $508.68 of excess left alone, and the plan it produces sells $11,443.70 against $11,952.37 of buys. The $508.67 difference has to come from outside the portfolio. Sells are sequenced first so a broker frees cash before spending it, but that is ordering and not sufficiency.
 - Lot-level FIFO sell assignment (tax-loss harvesting order) is not implemented. Orders specify share counts only.
 - The API and its database sit on one instance, and that Postgres container serves two other demos from their own databases. There is no redundancy: losing the box loses the service and the data together.
