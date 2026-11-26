@@ -4,7 +4,10 @@ public static class RebalancingEngine
 {
     /// <summary>
     /// Generates buy/sell orders to bring all out-of-band positions back to target.
-    /// Sells are generated before buys so proceeds can fund purchases.
+    /// Sells are generated before buys so a broker executing in order frees cash before
+    /// spending it. That is an ordering guarantee, not a funding one: only out-of-band
+    /// positions are traded, so an in-band overweight is never sold and the buy side can
+    /// exceed the sell side. The seeded demo does exactly that, by $508.67.
     /// </summary>
     public static IReadOnlyList<RebalancingOrder> GenerateOrders(
         DriftReport drift,

@@ -27,6 +27,17 @@ public class Portfolio
         if (Math.Abs(weightSum - 1.0m) > 0.001m)
             throw new DomainException($"Target allocations must sum to 1.0 (got {weightSum:F4}).");
 
+        // Checked on the upper-cased ticker because that is what TargetAllocation.Create
+        // stores. ("aapl", 0.5) and ("AAPL", 0.5) therefore both become AAPL, pass the sum
+        // check above, and store two rows for one ticker. DriftCalculator then keys a
+        // dictionary by ticker and throws ArgumentException, which is not a DomainException,
+        // so it surfaced as a 500 and no route could repair the portfolio afterwards.
+        var duplicate = allocations
+            .GroupBy(a => a.ticker?.Trim().ToUpperInvariant())
+            .FirstOrDefault(g => g.Count() > 1);
+        if (duplicate is not null)
+            throw new DomainException($"Target allocations contain '{duplicate.Key}' more than once.");
+
         var id = Guid.NewGuid();
         return new Portfolio
         {
